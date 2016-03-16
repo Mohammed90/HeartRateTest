@@ -22,6 +22,7 @@ public class MainActivity extends WearableActivity implements SensorEventListene
     private Drawable imgStart;
     private SensorManager mSensorManager;
     private Sensor mHeartRateSensor;
+    private BluetoothService mBluetoothService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,25 +36,29 @@ public class MainActivity extends WearableActivity implements SensorEventListene
                 btnStart = (ImageButton) stub.findViewById(R.id.btnStart);
                 btnPause = (ImageButton) stub.findViewById(R.id.btnPause);
 
+                mBluetoothService = new BluetoothService();
+                mBluetoothService.enableBluetooth();
+
                 btnStart.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         btnStart.setVisibility(ImageButton.GONE);
                         btnPause.setVisibility(ImageButton.VISIBLE);
                         mTextView.setText("Please wait...");
-                        startMeasure();
+//                        startMeasure();
+
                     }
                 });
 
-                btnPause.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        btnPause.setVisibility(ImageButton.GONE);
-                        btnStart.setVisibility(ImageButton.VISIBLE);
-                        mTextView.setText("--");
-                        stopMeasure();
-                    }
-                });
+//                btnPause.setOnClickListener(new View.OnClickListener() {
+//                    @Override
+//                    public void onClick(View v) {
+//                        btnPause.setVisibility(ImageButton.GONE);
+//                        btnStart.setVisibility(ImageButton.VISIBLE);
+//                        mTextView.setText("--");
+//                        stopMeasure();
+//                    }
+//                });
 
             }
         });

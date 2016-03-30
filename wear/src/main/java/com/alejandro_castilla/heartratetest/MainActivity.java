@@ -1,27 +1,17 @@
 package com.alejandro_castilla.heartratetest;
 
-import android.content.Context;
-import android.graphics.drawable.Drawable;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.support.wearable.activity.WearableActivity;
 import android.support.wearable.view.WatchViewStub;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
-public class MainActivity extends WearableActivity implements SensorEventListener {
+public class MainActivity extends WearableActivity {
 
     private TextView mTextView;
-    private ImageButton btnStart;
-    private ImageButton btnPause;
-    private Drawable imgStart;
-    private SensorManager mSensorManager;
-    private Sensor mHeartRateSensor;
+    private ImageButton mBtnStart;
+    private ImageButton mBtnPause;
     private BluetoothService mBluetoothService;
 
     @Override
@@ -33,82 +23,25 @@ public class MainActivity extends WearableActivity implements SensorEventListene
             @Override
             public void onLayoutInflated(WatchViewStub stub) {
                 mTextView = (TextView) stub.findViewById(R.id.heartRateText);
-                btnStart = (ImageButton) stub.findViewById(R.id.btnStart);
-                btnPause = (ImageButton) stub.findViewById(R.id.btnPause);
+                mBtnStart = (ImageButton) stub.findViewById(R.id.btnStart);
+                mBtnPause = (ImageButton) stub.findViewById(R.id.btnPause);
 
-                mBluetoothService = new BluetoothService();
-                mBluetoothService.enableBluetooth();
-
-                btnStart.setOnClickListener(new View.OnClickListener() {
+                mBtnStart.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        btnStart.setVisibility(ImageButton.GONE);
-                        btnPause.setVisibility(ImageButton.VISIBLE);
+                        mBtnStart.setVisibility(ImageButton.GONE);
+                        mBtnPause.setVisibility(ImageButton.VISIBLE);
                         mTextView.setText("Please wait...");
-//                        startMeasure();
+                        mBluetoothService.enableBluetooth();
 
                     }
                 });
-
-//                btnPause.setOnClickListener(new View.OnClickListener() {
-//                    @Override
-//                    public void onClick(View v) {
-//                        btnPause.setVisibility(ImageButton.GONE);
-//                        btnStart.setVisibility(ImageButton.VISIBLE);
-//                        mTextView.setText("--");
-//                        stopMeasure();
-//                    }
-//                });
 
             }
         });
 
         setAmbientEnabled();
-        
-        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mHeartRateSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE);
+        mBluetoothService = new BluetoothService(this);
 
-    }
-
-    private void startMeasure() {
-        boolean sensorRegistered = mSensorManager.registerListener(this, mHeartRateSensor, SensorManager.SENSOR_DELAY_FASTEST);
-        Log.d("Sensor Status:", " Sensor registered: " + (sensorRegistered ? "yes" : "no"));
-    }
-
-    private void stopMeasure() {
-        mSensorManager.unregisterListener(this);
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        float mHeartRateFloat = event.values[0];
-
-        int mHeartRate = Math.round(mHeartRateFloat);
-
-        mTextView.setText(Integer.toString(mHeartRate));
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-    }
-
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//
-//        //Print all the sensors
-//        if (mHeartRateSensor == null) {
-//            List<Sensor> sensors = mSensorManager.getSensorList(Sensor.TYPE_ALL);
-//            for (Sensor sensor1 : sensors) {
-//                Log.i("Sensor list", sensor1.getName() + ": " + sensor1.getType());
-//            }
-//        }
-//    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        mSensorManager.unregisterListener(this);
     }
 }

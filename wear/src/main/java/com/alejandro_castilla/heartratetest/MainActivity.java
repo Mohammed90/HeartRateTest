@@ -13,6 +13,7 @@ public class MainActivity extends WearableActivity {
     private ImageButton mBtnStart;
     private ImageButton mBtnPause;
     private BluetoothService mBluetoothService;
+    private BluetoothStatus mBluetoothStatus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +34,10 @@ public class MainActivity extends WearableActivity {
                         mBtnPause.setVisibility(ImageButton.VISIBLE);
                         mTextView.setText("Please wait...");
                         mBluetoothService.enableBluetooth();
+                        if (mBluetoothService.getmBluetoothStatus() == BluetoothStatus.IDLE) {
+                            mBluetoothService.startDiscoveryOfDevices();
+                        }
+
 
                     }
                 });
@@ -43,5 +48,11 @@ public class MainActivity extends WearableActivity {
         setAmbientEnabled();
         mBluetoothService = new BluetoothService(this);
 
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mBluetoothService.stopDiscoveryOfDevices();
     }
 }

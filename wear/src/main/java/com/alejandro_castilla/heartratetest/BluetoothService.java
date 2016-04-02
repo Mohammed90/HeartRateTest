@@ -11,6 +11,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.widget.Toast;
 
 /**
  * Created by alejandrocq on 16/03/16.
@@ -26,6 +27,8 @@ public class BluetoothService extends Service {
     private final IBinder mBluetoothServiceBinder = new BluetoothServiceBinder();
     private BluetoothAdapter mBluetoothAdapter = null;
     private BroadcastReceiver mReceiver;
+
+    private Context mToastContext = null;
 
     @Override
     public void onCreate() {
@@ -67,9 +70,9 @@ public class BluetoothService extends Service {
                 if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                     BluetoothDevice device = intent
                             .getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-//                    Toast.makeText(mMainContext, device.getName() + "\n" + device.getAddress()
-//                            , Toast.LENGTH_LONG);
-                    Log.d("Device found", device.getName() + " " + device.getAddress());
+                    String deviceData = device.getName() + " " + device.getAddress();
+                    Log.d("Device found", deviceData);
+                    Toast.makeText(mToastContext, deviceData, Toast.LENGTH_LONG).show();
 
                 }
             }
@@ -87,6 +90,9 @@ public class BluetoothService extends Service {
         Log.i(TAG, "Receiver unregistered.");
     }
 
+    public void setmToastContext(Context mToastContext) {
+        this.mToastContext = mToastContext;
+    }
 
     /* Class used to bind with the client (MainActivity.java) */
 

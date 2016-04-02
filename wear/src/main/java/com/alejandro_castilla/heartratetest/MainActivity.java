@@ -37,6 +37,8 @@ public class MainActivity extends WearableActivity {
                     (BluetoothService.BluetoothServiceBinder) service;
             mBluetoothService = mBluetoothServiceBinder.getService();
             mBound = true;
+            mBluetoothService.setmBluetoothAdapter(mBluetoothAdapter);
+            mBluetoothService.setmToastContext(MainActivity.this);
         }
 
         @Override
@@ -83,7 +85,6 @@ public class MainActivity extends WearableActivity {
                     public void onClick(View v) {
                         mBtnStart.setVisibility(ImageButton.GONE);
                         mBtnPause.setVisibility(ImageButton.VISIBLE);
-                        mBluetoothService.setmBluetoothAdapter(mBluetoothAdapter);
                         mBluetoothService.startDiscoveryOfDevices();
 
                     }

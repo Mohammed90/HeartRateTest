@@ -17,16 +17,16 @@ import android.widget.Toast;
 
 public class MainActivity extends WearableActivity {
 
-    private TextView mTextView;
-    private ImageButton mBtnStart;
-    private ImageButton mBtnPause;
+    private TextView textView;
+    private ImageButton btnStart;
+    private ImageButton btnPause;
 
     /* Some declarations in order to manage Bluetooth. */
     private final int REQUEST_ENABLE_BT = 1;
-    private BluetoothAdapter mBluetoothAdapter = null;
-    private Intent mBluetoothServiceIntent;
-    private BluetoothService mBluetoothService;
-    private boolean mBound = false;
+    private BluetoothAdapter bluetoothAdapter = null;
+    private Intent bluetoothServiceIntent;
+    private BluetoothService bluetoothService;
+    private boolean bound = false;
 
     /* ServiceConnection declaration to connect to BluetoothService */
 
@@ -35,37 +35,17 @@ public class MainActivity extends WearableActivity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             BluetoothService.BluetoothServiceBinder mBluetoothServiceBinder =
                     (BluetoothService.BluetoothServiceBinder) service;
-            mBluetoothService = mBluetoothServiceBinder.getService();
-            mBound = true;
-            mBluetoothService.setmBluetoothAdapter(mBluetoothAdapter);
-            mBluetoothService.setmToastContext(MainActivity.this);
+            bluetoothService = mBluetoothServiceBinder.getService();
+            bound = true;
+            bluetoothService.setBluetoothAdapter(bluetoothAdapter);
+            bluetoothService.setToastContext(MainActivity.this);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            mBound = false;
+            bound = false;
         }
     };
-
-
-    public void enableBluetooth() {
-
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
-        if (mBluetoothAdapter == null) {
-            Toast.makeText(this, "This device doesn't support Bluetooth.",
-                    Toast.LENGTH_LONG).show();
-            BluetoothService.mBluetoothStatus = BluetoothStatus.NOT_SUPPORTED;
-        } else if (!mBluetoothAdapter.isEnabled()) {
-            Intent enableBluetoothIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBluetoothIntent, REQUEST_ENABLE_BT);
-        } else {
-            Toast.makeText(this, "Bluetooth is already enabled.", Toast.LENGTH_LONG)
-                    .show();
-            BluetoothService.mBluetoothStatus = BluetoothStatus.IDLE;
-        }
-
-    }
 
 
     @Override
@@ -76,17 +56,28 @@ public class MainActivity extends WearableActivity {
         stub.setOnLayoutInflatedListener(new WatchViewStub.OnLayoutInflatedListener() {
             @Override
             public void onLayoutInflated(WatchViewStub stub) {
-                mTextView = (TextView) stub.findViewById(R.id.heartRateText);
-                mBtnStart = (ImageButton) stub.findViewById(R.id.btnStart);
-                mBtnPause = (ImageButton) stub.findViewById(R.id.btnPause);
+                textView = (TextView) stub.findViewById(R.id.heartRateText);
+                btnStart = (ImageButton) stub.findViewById(R.id.btnStart);
+                btnPause = (ImageButton) stub.findViewById(R.id.btnPause);
 
-                mBtnStart.setOnClickListener(new View.OnClickListener() {
+                btnStart.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        mBtnStart.setVisibility(ImageButton.GONE);
-                        mBtnPause.setVisibility(ImageButton.VISIBLE);
-                        mBluetoothService.startDiscoveryOfDevices();
+                        btnStart.setVisibility(ImageButton.GONE);
+                        btnPause.setVisibility(ImageButton.VISIBLE);
+                        textView.setText("Discovering...");
+                        bluetoothService.startDiscoveryOfDevices();
 
+                    }
+                });
+
+                btnPause.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        btnPause.setVisibility(ImageButton.GONE);
+                        btnStart.setVisibility(ImageButton.VISIBLE);
+                        bluetoothService.stopDiscoveryOfDevices();
+                        textView.setText("Idle");
                     }
                 });
 
@@ -97,18 +88,37 @@ public class MainActivity extends WearableActivity {
 
     }
 
+    public void enableBluetooth() {
+
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        if (bluetoothAdapter == null) {
+            Toast.makeText(this, "This device doesn't support Bluetooth.",
+                    Toast.LENGTH_LONG).show();
+            BluetoothService.bluetoothStatus = BluetoothStatus.NOT_SUPPORTED;
+        } else if (!bluetoothAdapter.isEnabled()) {
+            Intent enableBluetoothIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBluetoothIntent, REQUEST_ENABLE_BT);
+        } else {
+            Toast.makeText(this, "Bluetooth is already enabled.", Toast.LENGTH_LONG)
+                    .show();
+            BluetoothService.bluetoothStatus = BluetoothStatus.IDLE;
+        }
+
+    }
+
 
     @Override
     protected void onStart() {
         super.onStart();
         enableBluetooth();
         // Finish the application if Bluetooth is not supported.
-        if (BluetoothService.mBluetoothStatus == BluetoothStatus.NOT_SUPPORTED) {
+        if (BluetoothService.bluetoothStatus == BluetoothStatus.NOT_SUPPORTED) {
             finish();
         } else {
             // Start BluetoothService
-            mBluetoothServiceIntent = new Intent(this, BluetoothService.class);
-            bindService(mBluetoothServiceIntent, mBluetoothServiceConnection,
+            bluetoothServiceIntent = new Intent(this, BluetoothService.class);
+            bindService(bluetoothServiceIntent, mBluetoothServiceConnection,
                     Context.BIND_AUTO_CREATE);
 
         }
@@ -117,9 +127,9 @@ public class MainActivity extends WearableActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        mBluetoothService.stopDiscoveryOfDevices();
+        bluetoothService.stopDiscoveryOfDevices();
         unbindService(mBluetoothServiceConnection);
-        mBound=false;
+        bound = false;
     }
 
     @Override
@@ -128,7 +138,7 @@ public class MainActivity extends WearableActivity {
             case REQUEST_ENABLE_BT:
                 if (resultCode == Activity.RESULT_OK) {
                     Toast.makeText(this, "Bluetooth has been enabled.", Toast.LENGTH_LONG).show();
-                    BluetoothService.mBluetoothStatus = BluetoothStatus.IDLE;
+                    BluetoothService.bluetoothStatus = BluetoothStatus.IDLE;
                 } else {
                     Toast.makeText(this, "Error while activating Bluetooth.",
                             Toast.LENGTH_LONG).show();

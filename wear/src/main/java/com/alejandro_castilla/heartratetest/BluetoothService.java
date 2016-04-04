@@ -13,6 +13,8 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 import android.widget.Toast;
 
+import zephyr.android.BioHarnessBT.BTClient;
+
 /**
  * Created by alejandrocq on 16/03/16.
  */
@@ -22,13 +24,17 @@ enum BluetoothStatus { IDLE, DISCOVERING, NOT_SUPPORTED }
 public class BluetoothService extends Service {
 
     private static final String TAG = "BluetoothService";
-    public static BluetoothStatus mBluetoothStatus;
+    public static BluetoothStatus bluetoothStatus;
 
-    private final IBinder mBluetoothServiceBinder = new BluetoothServiceBinder();
-    private BluetoothAdapter mBluetoothAdapter = null;
-    private BroadcastReceiver mReceiver;
+    private final IBinder bluetoothServiceBinder = new BluetoothServiceBinder();
+    private BluetoothAdapter bluetoothAdapter = null;
+    private BroadcastReceiver broadcastReceiver;
+    private BTClient zephyrBTClient;
 
-    private Context mToastContext = null;
+    private BluetoothDevice device;
+    private String bluetoothMACAddress;
+
+    private Context toastContext = null;
 
     @Override
     public void onCreate() {
@@ -51,56 +57,92 @@ public class BluetoothService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return mBluetoothServiceBinder;
+        return bluetoothServiceBinder;
     }
 
-    public void setmBluetoothAdapter(BluetoothAdapter mBluetoothAdapter) {
-        this.mBluetoothAdapter = mBluetoothAdapter;
+    public void setBluetoothAdapter(BluetoothAdapter bluetoothAdapter) {
+        this.bluetoothAdapter = bluetoothAdapter;
     }
 
     public void startDiscoveryOfDevices() {
-        mBluetoothAdapter.startDiscovery();
-        mBluetoothStatus = BluetoothStatus.DISCOVERING;
+        bluetoothAdapter.startDiscovery();
+        bluetoothStatus = BluetoothStatus.DISCOVERING;
 
         //BroadcastReceiver to receive data
-        mReceiver = new BroadcastReceiver() {
+        broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
                 if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                    BluetoothDevice device = intent
+                    BluetoothDevice deviceFound = intent
                             .getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    String deviceData = device.getName() + " " + device.getAddress();
+                    String deviceData = deviceFound.getName() + " " + deviceFound.getAddress();
                     Log.d("Device found", deviceData);
-                    Toast.makeText(mToastContext, deviceData, Toast.LENGTH_LONG).show();
+                    Toast.makeText(toastContext, deviceData, Toast.LENGTH_LONG).show();
+                    // Temporary stuff for Zephyr sensor
+                    if (deviceFound.getName().contains("BH")) {
+                        device = deviceFound;
+                        bluetoothMACAddress = deviceFound.getAddress();
+                        Toast.makeText(toastContext, "Zephyr sensor found!",
+                                Toast.LENGTH_LONG).show();
+                    }
 
                 }
             }
         };
 
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        this.registerReceiver(mReceiver, filter);
+        this.registerReceiver(broadcastReceiver, filter);
         Log.i(TAG, "Receiver registered.");
 
     }
 
     public void stopDiscoveryOfDevices() {
-        this.unregisterReceiver(mReceiver);
-        mBluetoothAdapter.cancelDiscovery();
-        Log.i(TAG, "Receiver unregistered.");
+        if (bluetoothStatus == bluetoothStatus.DISCOVERING ) {
+            this.unregisterReceiver(broadcastReceiver);
+            bluetoothStatus = BluetoothStatus.IDLE;
+            bluetoothAdapter.cancelDiscovery();
+            Log.i(TAG, "Receiver unregistered.");
+        }
     }
 
-    public void setmToastContext(Context mToastContext) {
-        this.mToastContext = mToastContext;
+    public void setToastContext(Context toastContext) {
+        this.toastContext = toastContext;
     }
 
     /* Class used to bind with the client (MainActivity.java) */
 
     public class BluetoothServiceBinder extends Binder {
-
         public BluetoothService getService() {
             return BluetoothService.this;
         }
     }
+
+    /* Thread used to connect with the target Bluetooth device */
+
+//    private class BluetoothConnectThread extends Thread {
+//        private final BluetoothSocket mSocket;
+//        private final BluetoothDevice device;
+//
+//        public BluetoothConnectThread(BluetoothSocket mSocket, BluetoothDevice device) {
+//            // We create a temporary socket because mSocket is final
+//            BluetoothSocket tmpSocket = mSocket;
+//            this.device = device;
+//
+//            // Get a BluetoothSocket to connect with the given BluetoothDevice
+//            try {
+//                // MY_UUID is the app's UUID string, also used by the server code
+//                tmpSocket = device.createRfcommSocketToServiceRecord(UUID);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//            this.mSocket = tmpSocket;
+//
+//        }
+//
+//
+//
+//
+//    }
 
 }

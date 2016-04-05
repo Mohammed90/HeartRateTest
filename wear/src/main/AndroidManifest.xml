@@ -18,9 +18,10 @@
 
         <uses-library android:name="com.google.android.wearable" android:required="false" />
 
-        <!--Declaration of BluetoothService. With android:exported we stop other apps
+        <!--Declaration of services. With android:exported we stop other apps
         from starting it.-->
         <service android:name=".BluetoothService" android:exported="false" />
+        <service android:name=".ZephyrService" android:exported="false" />
 
         <activity
             android:name=".MainActivity"

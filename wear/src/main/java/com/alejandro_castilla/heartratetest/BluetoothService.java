@@ -7,13 +7,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.widget.Toast;
 
-import zephyr.android.BioHarnessBT.BTClient;
+import java.util.ArrayList;
 
 /**
  * Created by alejandrocq on 16/03/16.
@@ -29,10 +30,9 @@ public class BluetoothService extends Service {
     private final IBinder bluetoothServiceBinder = new BluetoothServiceBinder();
     private BluetoothAdapter bluetoothAdapter = null;
     private BroadcastReceiver broadcastReceiver;
-    private BTClient zephyrBTClient;
-
-    private BluetoothDevice device;
-    private String bluetoothMACAddress;
+    private ArrayList<BluetoothDevice> devices = new ArrayList<BluetoothDevice>();
+    private BluetoothDevice targetDevice;
+    private boolean deviceFound;
 
     private Context toastContext = null;
 
@@ -43,7 +43,6 @@ public class BluetoothService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "BluetoothService has been started.");
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -57,6 +56,7 @@ public class BluetoothService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+        Log.d(TAG, "BluetoothService has been started.");
         return bluetoothServiceBinder;
     }
 
@@ -79,14 +79,7 @@ public class BluetoothService extends Service {
                     String deviceData = deviceFound.getName() + " " + deviceFound.getAddress();
                     Log.d("Device found", deviceData);
                     Toast.makeText(toastContext, deviceData, Toast.LENGTH_LONG).show();
-                    // Temporary stuff for Zephyr sensor
-                    if (deviceFound.getName().contains("BH")) {
-                        device = deviceFound;
-                        bluetoothMACAddress = deviceFound.getAddress();
-                        Toast.makeText(toastContext, "Zephyr sensor found!",
-                                Toast.LENGTH_LONG).show();
-                    }
-
+                    devices.add(deviceFound);
                 }
             }
         };
@@ -102,8 +95,17 @@ public class BluetoothService extends Service {
             this.unregisterReceiver(broadcastReceiver);
             bluetoothStatus = BluetoothStatus.IDLE;
             bluetoothAdapter.cancelDiscovery();
-            Log.i(TAG, "Receiver unregistered.");
+            Log.i(TAG, "Receiver unregistered and discovery stopped.");
         }
+    }
+
+    public void findBluetoothDevice(String deviceName) {
+        deviceFound = false;
+        new FindBluetoothDeviceTask().execute(deviceName);
+    }
+
+    public BluetoothDevice getTargetDevice() {
+        return targetDevice;
     }
 
     public void setToastContext(Context toastContext) {
@@ -118,31 +120,40 @@ public class BluetoothService extends Service {
         }
     }
 
-    /* Thread used to connect with the target Bluetooth device */
+    /* AsyncTask to find devices on devices list */
 
-//    private class BluetoothConnectThread extends Thread {
-//        private final BluetoothSocket mSocket;
-//        private final BluetoothDevice device;
-//
-//        public BluetoothConnectThread(BluetoothSocket mSocket, BluetoothDevice device) {
-//            // We create a temporary socket because mSocket is final
-//            BluetoothSocket tmpSocket = mSocket;
-//            this.device = device;
-//
-//            // Get a BluetoothSocket to connect with the given BluetoothDevice
-//            try {
-//                // MY_UUID is the app's UUID string, also used by the server code
-//                tmpSocket = device.createRfcommSocketToServiceRecord(UUID);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//            this.mSocket = tmpSocket;
-//
-//        }
-//
-//
-//
-//
-//    }
+    private class FindBluetoothDeviceTask extends AsyncTask<String, Integer, BluetoothDevice> {
+        @Override
+        protected BluetoothDevice doInBackground(String... params) {
+            try {
+                // Wait for devices list to be updated.
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            if (devices != null) {
+                for (BluetoothDevice device : devices) {
+                    if (device.getName().contains(params[0])) {
+                        // We found it, so we stop discovering
+                        deviceFound = true;
+                        stopDiscoveryOfDevices();
+                        targetDevice = device;
+                        Log.d(TAG, "The device requested has been found.");
+                    }
+                }
+            }
+            return targetDevice;
+        }
+
+        @Override
+        protected void onPostExecute(BluetoothDevice bluetoothDevice) {
+            super.onPostExecute(bluetoothDevice);
+            if (targetDevice == null) {
+                Log.d(TAG, "targetDevice null");
+            }
+            //Send the device to MainActivity
+            sendBroadcast(new Intent("targetdevice").putExtra("device", bluetoothDevice));
+        }
+    }
 
 }

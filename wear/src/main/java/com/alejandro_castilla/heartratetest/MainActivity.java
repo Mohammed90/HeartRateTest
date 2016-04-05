@@ -2,48 +2,88 @@ package com.alejandro_castilla.heartratetest;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.wearable.activity.WearableActivity;
 import android.support.wearable.view.WatchViewStub;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+
 public class MainActivity extends WearableActivity {
+
+    private static final String TAG = "MainActivity";
 
     private TextView textView;
     private ImageButton btnStart;
     private ImageButton btnPause;
 
-    /* Some declarations in order to manage Bluetooth. */
+    /* Some fields used for Bluetooth. */
     private final int REQUEST_ENABLE_BT = 1;
     private BluetoothAdapter bluetoothAdapter = null;
-    private Intent bluetoothServiceIntent;
     private BluetoothService bluetoothService;
-    private boolean bound = false;
+    private ArrayList<BluetoothDevice> devices;
+    private BluetoothDevice targetDevice;
+    private boolean connectedToDevice = false;
+
+    /* Some fields used for Zephyr Service */
+    private ZephyrService zephyrService = null;
+    private boolean zephyrServiceBinded = false;
+
+    private BroadcastReceiver broadcastReceiver = null;
+    private boolean broadcastReceiverRegistered = false;
+    private BroadcastReceiver heartRateBroadcastReceiver = null;
+    private boolean heartRateBroadcastReceiverRegistered = false;
 
     /* ServiceConnection declaration to connect to BluetoothService */
 
-    private ServiceConnection mBluetoothServiceConnection = new ServiceConnection() {
+    private ServiceConnection bluetoothServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            BluetoothService.BluetoothServiceBinder mBluetoothServiceBinder =
+            BluetoothService.BluetoothServiceBinder bluetoothServiceBinder =
                     (BluetoothService.BluetoothServiceBinder) service;
-            bluetoothService = mBluetoothServiceBinder.getService();
-            bound = true;
+            bluetoothService = bluetoothServiceBinder.getService();
             bluetoothService.setBluetoothAdapter(bluetoothAdapter);
             bluetoothService.setToastContext(MainActivity.this);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            bound = false;
+            Log.d(TAG, "BluetoothService disconnected.");
+        }
+    };
+
+    /* ServiceConnection declaration to connect to ZephyrService */
+
+    private ServiceConnection zephyrServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            ZephyrService.ZephyrServiceBinder zephyrServiceBinder =
+                    (ZephyrService.ZephyrServiceBinder) service;
+            zephyrService = zephyrServiceBinder.getService();
+            connectedToDevice=zephyrService.connectToZephyr(bluetoothAdapter, targetDevice);
+            if (connectedToDevice) {
+                textView.setText("Connected to Zephyr");
+                receiveHeartRateData();
+            }
+            zephyrServiceBinded = true;
+
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
         }
     };
 
@@ -67,6 +107,9 @@ public class MainActivity extends WearableActivity {
                         btnPause.setVisibility(ImageButton.VISIBLE);
                         textView.setText("Discovering...");
                         bluetoothService.startDiscoveryOfDevices();
+                        bluetoothService.findBluetoothDevice("BH");
+                        getBluetoothDeviceFromService();
+
 
                     }
                 });
@@ -77,6 +120,7 @@ public class MainActivity extends WearableActivity {
                         btnPause.setVisibility(ImageButton.GONE);
                         btnStart.setVisibility(ImageButton.VISIBLE);
                         bluetoothService.stopDiscoveryOfDevices();
+                        stopZephyrService();
                         textView.setText("Idle");
                     }
                 });
@@ -107,6 +151,58 @@ public class MainActivity extends WearableActivity {
 
     }
 
+    public void getBluetoothDeviceFromService() {
+        broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                targetDevice = intent.getParcelableExtra("device");
+                if (targetDevice == null) {
+                    Log.d(TAG, "Received a null device");
+                } else {
+                    Log.d(TAG, "Device received on MainActivity: " + targetDevice.getName());
+                    textView.setText("Device found!");
+                }
+                startZephyrService();
+            }
+        };
+        IntentFilter filter = new IntentFilter("targetdevice");
+        this.registerReceiver(broadcastReceiver, filter);
+        broadcastReceiverRegistered = true;
+        Log.d(TAG, "Broadcast Receiver for device has been registered.");
+    }
+
+    public void startZephyrService() {
+        this.unregisterReceiver(broadcastReceiver);
+        broadcastReceiverRegistered = false;
+        Intent zephyrServiceIntent = new Intent(this, ZephyrService.class);
+        bindService(zephyrServiceIntent, zephyrServiceConnection,
+                Context.BIND_AUTO_CREATE);
+    }
+
+    public void stopZephyrService() {
+        zephyrService.closeConnection();
+        this.unregisterReceiver(heartRateBroadcastReceiver);
+        heartRateBroadcastReceiverRegistered = false;
+        unbindService(zephyrServiceConnection);
+        zephyrServiceBinded = false;
+
+    }
+
+    private void receiveHeartRateData() {
+        heartRateBroadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.d(TAG, "Heart Rate broadcast received.");
+                String heartrate = intent.getStringExtra("heartratestring");
+                textView.setText(heartrate);
+            }
+        };
+
+        IntentFilter heartRatefilter = new IntentFilter("heartrate");
+        this.registerReceiver(heartRateBroadcastReceiver, heartRatefilter);
+        heartRateBroadcastReceiverRegistered = true;
+        Log.d(TAG, "Broadcast Receiver for heart rate has been registered.");
+    }
 
     @Override
     protected void onStart() {
@@ -117,8 +213,8 @@ public class MainActivity extends WearableActivity {
             finish();
         } else {
             // Start BluetoothService
-            bluetoothServiceIntent = new Intent(this, BluetoothService.class);
-            bindService(bluetoothServiceIntent, mBluetoothServiceConnection,
+            Intent bluetoothServiceIntent = new Intent(this, BluetoothService.class);
+            bindService(bluetoothServiceIntent, bluetoothServiceConnection,
                     Context.BIND_AUTO_CREATE);
 
         }
@@ -128,8 +224,16 @@ public class MainActivity extends WearableActivity {
     protected void onStop() {
         super.onStop();
         bluetoothService.stopDiscoveryOfDevices();
-        unbindService(mBluetoothServiceConnection);
-        bound = false;
+        unbindService(bluetoothServiceConnection);
+        if (zephyrServiceBinded) {
+            unbindService(zephyrServiceConnection);
+        }
+        if (broadcastReceiverRegistered) {
+            this.unregisterReceiver(broadcastReceiver);
+        }
+        if (heartRateBroadcastReceiverRegistered) {
+            this.unregisterReceiver(heartRateBroadcastReceiver);
+        }
     }
 
     @Override

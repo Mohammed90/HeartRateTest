@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <uses-feature android:name="android.hardware.type.watch" />
 
     <application
@@ -15,17 +16,33 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault">
+        <uses-library
+            android:name="com.google.android.wearable"
+            android:required="false" />
 
-        <uses-library android:name="com.google.android.wearable" android:required="false" />
-
-        <!--Declaration of services. With android:exported we stop other apps
-        from starting it.-->
-        <service android:name=".BluetoothService" android:exported="false" />
-        <service android:name=".ZephyrService" android:exported="false" />
+        <!--
+        Declaration of services. With android:exported we stop other apps
+        from starting it.
+        -->
+        <service
+            android:name=".services.bluetooth.BluetoothService"
+            android:exported="false" />
+        <service
+            android:name=".services.zephyr.ZephyrService"
+            android:exported="false" />
 
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".TestActivity"
+            android:label="@string/title_activity_test">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

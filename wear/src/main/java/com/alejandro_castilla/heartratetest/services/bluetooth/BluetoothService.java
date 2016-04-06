@@ -1,4 +1,4 @@
-package com.alejandro_castilla.heartratetest;
+package com.alejandro_castilla.heartratetest.services.bluetooth;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -20,9 +20,11 @@ import java.util.ArrayList;
  * Created by alejandrocq on 16/03/16.
  */
 
-enum BluetoothStatus { IDLE, DISCOVERING, NOT_SUPPORTED }
+
 
 public class BluetoothService extends Service {
+
+    public enum BluetoothStatus { IDLE, DISCOVERING, NOT_SUPPORTED }
 
     private static final String TAG = "BluetoothService";
     public static BluetoothStatus bluetoothStatus;
@@ -30,8 +32,8 @@ public class BluetoothService extends Service {
     private final IBinder bluetoothServiceBinder = new BluetoothServiceBinder();
     private BluetoothAdapter bluetoothAdapter = null;
     private BroadcastReceiver broadcastReceiver;
-    private ArrayList<BluetoothDevice> devices = new ArrayList<BluetoothDevice>();
-    private BluetoothDevice targetDevice;
+    private ArrayList<BluetoothDevice> devices;
+    private BluetoothDevice targetDevice = null;
     private boolean deviceFound;
 
     private Context toastContext = null;
@@ -65,6 +67,7 @@ public class BluetoothService extends Service {
     }
 
     public void startDiscoveryOfDevices() {
+        devices = new ArrayList<>();
         bluetoothAdapter.startDiscovery();
         bluetoothStatus = BluetoothStatus.DISCOVERING;
 
@@ -100,6 +103,7 @@ public class BluetoothService extends Service {
     }
 
     public void findBluetoothDevice(String deviceName) {
+        targetDevice = null;
         deviceFound = false;
         new FindBluetoothDeviceTask().execute(deviceName);
     }
@@ -152,7 +156,8 @@ public class BluetoothService extends Service {
                 Log.d(TAG, "targetDevice null");
             }
             //Send the device to MainActivity
-            sendBroadcast(new Intent("targetdevice").putExtra("device", bluetoothDevice));
+            sendBroadcast(new Intent("targetdevice")
+                    .putExtra("device", bluetoothDevice).putExtra("foundboolean", deviceFound));
         }
     }
 

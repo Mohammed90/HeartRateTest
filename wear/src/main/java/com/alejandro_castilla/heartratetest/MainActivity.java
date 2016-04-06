@@ -19,6 +19,10 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alejandro_castilla.heartratetest.services.bluetooth.BluetoothService;
+import com.alejandro_castilla.heartratetest.services.bluetooth.BluetoothService.BluetoothStatus;
+import com.alejandro_castilla.heartratetest.services.zephyr.ZephyrService;
+
 import java.util.ArrayList;
 
 public class MainActivity extends WearableActivity {
@@ -156,13 +160,20 @@ public class MainActivity extends WearableActivity {
             @Override
             public void onReceive(Context context, Intent intent) {
                 targetDevice = intent.getParcelableExtra("device");
-                if (targetDevice == null) {
+                boolean deviceFound = intent.getBooleanExtra("foundboolean", false);
+                if (targetDevice == null || !deviceFound) {
                     Log.d(TAG, "Received a null device");
+                    bluetoothService.stopDiscoveryOfDevices();
+                    btnPause.setVisibility(ImageButton.GONE);
+                    btnStart.setVisibility(ImageButton.VISIBLE);
+                    Toast.makeText(MainActivity.this, "Device not found. Try again...",
+                            Toast.LENGTH_LONG).show();
+                    textView.setText("Idle");
                 } else {
                     Log.d(TAG, "Device received on MainActivity: " + targetDevice.getName());
                     textView.setText("Device found!");
+                    startZephyrService();
                 }
-                startZephyrService();
             }
         };
         IntentFilter filter = new IntentFilter("targetdevice");

@@ -36,19 +36,21 @@
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
+                <!-- This means that this activity appears on the launcher -->
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
-            android:name=".TestActivity"
+            android:name=".WearableListViewAdapter"
             android:label="@string/title_activity_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            <!-- <intent-filter> -->
+            <!-- <action android:name="android.intent.action.MAIN" /> -->
+            <!-- </intent-filter> -->
         </activity>
+        <activity
+            android:name=".DevicesListActivity"
+            android:label="@string/title_activity_devices_list"></activity>
     </application>
 
 </manifest>

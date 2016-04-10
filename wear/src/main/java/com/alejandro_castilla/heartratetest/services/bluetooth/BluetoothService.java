@@ -14,6 +14,9 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.alejandro_castilla.heartratetest.MainActivity;
+import com.alejandro_castilla.heartratetest.MainActivity.IntentType;
+
 import java.util.ArrayList;
 
 /**
@@ -154,10 +157,16 @@ public class BluetoothService extends Service {
             super.onPostExecute(bluetoothDevice);
             if (targetDevice == null) {
                 Log.d(TAG, "targetDevice null");
+                sendBroadcast(new Intent(MainActivity.INTENT_STRING)
+                        .putExtra("intenttype", IntentType.DEVICE_NOT_FOUND));
+            } else {
+                //Send the device to MainActivity
+                sendBroadcast(new Intent(MainActivity.INTENT_STRING)
+                        .putExtra("device", bluetoothDevice).putExtra("intenttype",
+                                IntentType.DEVICE_FOUND));
             }
-            //Send the device to MainActivity
-            sendBroadcast(new Intent("targetdevice")
-                    .putExtra("device", bluetoothDevice).putExtra("foundboolean", deviceFound));
+
+
         }
     }
 

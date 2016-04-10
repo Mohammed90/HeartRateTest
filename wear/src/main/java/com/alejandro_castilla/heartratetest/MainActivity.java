@@ -28,6 +28,13 @@ import java.util.ArrayList;
 public class MainActivity extends WearableActivity {
 
     private static final String TAG = "MainActivity";
+    public static final String INTENT_STRING = "heartratetestapp";
+
+    /* Enum for intents */
+    public enum IntentType {
+        DEVICE_FOUND, DEVICE_NOT_FOUND, HEART_RATE_DATA
+    }
+
 
     private TextView textView;
     private ImageButton btnStart;
@@ -47,8 +54,7 @@ public class MainActivity extends WearableActivity {
 
     private BroadcastReceiver broadcastReceiver = null;
     private boolean broadcastReceiverRegistered = false;
-    private BroadcastReceiver heartRateBroadcastReceiver = null;
-    private boolean heartRateBroadcastReceiverRegistered = false;
+    private final IntentFilter filter = new IntentFilter(INTENT_STRING);
 
     /* ServiceConnection declaration to connect to BluetoothService */
 
@@ -79,7 +85,7 @@ public class MainActivity extends WearableActivity {
             connectedToDevice=zephyrService.connectToZephyr(bluetoothAdapter, targetDevice);
             if (connectedToDevice) {
                 textView.setText("Connected to Zephyr");
-                receiveHeartRateData();
+//                receiveHeartRateData();
             }
             zephyrServiceBinded = true;
 
@@ -87,7 +93,7 @@ public class MainActivity extends WearableActivity {
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-
+            Log.d(TAG, "Zephyr Service disconnected.");
         }
     };
 
@@ -112,7 +118,9 @@ public class MainActivity extends WearableActivity {
                         textView.setText("Discovering...");
                         bluetoothService.startDiscoveryOfDevices();
                         bluetoothService.findBluetoothDevice("BH");
-                        getBluetoothDeviceFromService();
+                        startBroadcastReceiver();
+//                        Intent intent = new Intent (MainActivity.this, DevicesListActivity.class);
+//                        startActivity(intent);
 
 
                     }
@@ -155,36 +163,48 @@ public class MainActivity extends WearableActivity {
 
     }
 
-    public void getBluetoothDeviceFromService() {
+    public void startBroadcastReceiver() {
         broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                targetDevice = intent.getParcelableExtra("device");
-                boolean deviceFound = intent.getBooleanExtra("foundboolean", false);
-                if (targetDevice == null || !deviceFound) {
-                    Log.d(TAG, "Received a null device");
-                    bluetoothService.stopDiscoveryOfDevices();
-                    btnPause.setVisibility(ImageButton.GONE);
-                    btnStart.setVisibility(ImageButton.VISIBLE);
-                    Toast.makeText(MainActivity.this, "Device not found. Try again...",
-                            Toast.LENGTH_LONG).show();
-                    textView.setText("Idle");
-                } else {
-                    Log.d(TAG, "Device received on MainActivity: " + targetDevice.getName());
-                    textView.setText("Device found!");
-                    startZephyrService();
+                Log.d("TAG", "Intent received");
+                IntentType intentType = (IntentType) intent.getSerializableExtra("intenttype");
+                switch (intentType) {
+                    case DEVICE_FOUND:
+                        targetDevice = intent.getParcelableExtra("device");
+                        Log.d(TAG, "Device received on MainActivity: " + targetDevice.getName());
+                        textView.setText("Device found!");
+                        sendBroadcast(new Intent("devicetolist").putExtra("device", targetDevice));
+                        startZephyrService();
+                        break;
+                    case HEART_RATE_DATA:
+                        Log.d(TAG, "Heart Rate broadcast received.");
+                        String heartrate = intent.getStringExtra("heartratestring");
+                        textView.setText(heartrate);
+                        break;
+                    case DEVICE_NOT_FOUND:
+                        Log.d(TAG, "Received a null device");
+                        bluetoothService.stopDiscoveryOfDevices();
+                        btnPause.setVisibility(ImageButton.GONE);
+                        btnStart.setVisibility(ImageButton.VISIBLE);
+                        Toast.makeText(MainActivity.this, "Device not found. Try again...",
+                                Toast.LENGTH_LONG).show();
+                        textView.setText("Idle");
+                        MainActivity.this.unregisterReceiver(broadcastReceiver);
+                        broadcastReceiverRegistered = false;
+                        break;
+                    default:
+                        Log.d(TAG, "Error on intent");
+                        break;
                 }
             }
         };
-        IntentFilter filter = new IntentFilter("targetdevice");
         this.registerReceiver(broadcastReceiver, filter);
         broadcastReceiverRegistered = true;
         Log.d(TAG, "Broadcast Receiver for device has been registered.");
     }
 
     public void startZephyrService() {
-        this.unregisterReceiver(broadcastReceiver);
-        broadcastReceiverRegistered = false;
         Intent zephyrServiceIntent = new Intent(this, ZephyrService.class);
         bindService(zephyrServiceIntent, zephyrServiceConnection,
                 Context.BIND_AUTO_CREATE);
@@ -192,28 +212,29 @@ public class MainActivity extends WearableActivity {
 
     public void stopZephyrService() {
         zephyrService.closeConnection();
-        this.unregisterReceiver(heartRateBroadcastReceiver);
-        heartRateBroadcastReceiverRegistered = false;
+        this.unregisterReceiver(broadcastReceiver);
+        broadcastReceiverRegistered = false;
+//        heartRateBroadcastReceiverRegistered = false;
         unbindService(zephyrServiceConnection);
         zephyrServiceBinded = false;
 
     }
 
-    private void receiveHeartRateData() {
-        heartRateBroadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                Log.d(TAG, "Heart Rate broadcast received.");
-                String heartrate = intent.getStringExtra("heartratestring");
-                textView.setText(heartrate);
-            }
-        };
-
-        IntentFilter heartRatefilter = new IntentFilter("heartrate");
-        this.registerReceiver(heartRateBroadcastReceiver, heartRatefilter);
-        heartRateBroadcastReceiverRegistered = true;
-        Log.d(TAG, "Broadcast Receiver for heart rate has been registered.");
-    }
+//    private void receiveHeartRateData() {
+//        heartRateBroadcastReceiver = new BroadcastReceiver() {
+//            @Override
+//            public void onReceive(Context context, Intent intent) {
+//                Log.d(TAG, "Heart Rate broadcast received.");
+//                String heartrate = intent.getStringExtra("heartratestring");
+//                textView.setText(heartrate);
+//            }
+//        };
+//
+//        IntentFilter heartRatefilter = new IntentFilter("heartrate");
+//        this.registerReceiver(heartRateBroadcastReceiver, heartRatefilter);
+//        heartRateBroadcastReceiverRegistered = true;
+//        Log.d(TAG, "Broadcast Receiver for heart rate has been registered.");
+//    }
 
     @Override
     protected void onStart() {
@@ -224,6 +245,7 @@ public class MainActivity extends WearableActivity {
             finish();
         } else {
             // Start BluetoothService
+            Log.d(TAG, "Starting Bluetooth Service");
             Intent bluetoothServiceIntent = new Intent(this, BluetoothService.class);
             bindService(bluetoothServiceIntent, bluetoothServiceConnection,
                     Context.BIND_AUTO_CREATE);
@@ -234,16 +256,15 @@ public class MainActivity extends WearableActivity {
     @Override
     protected void onStop() {
         super.onStop();
+        Log.d(TAG, "Broadcast Receiver status: " + broadcastReceiverRegistered);
         bluetoothService.stopDiscoveryOfDevices();
         unbindService(bluetoothServiceConnection);
         if (zephyrServiceBinded) {
             unbindService(zephyrServiceConnection);
         }
         if (broadcastReceiverRegistered) {
+            Log.d(TAG, "BroadcastReceiver unregistered - onStop()");
             this.unregisterReceiver(broadcastReceiver);
-        }
-        if (heartRateBroadcastReceiverRegistered) {
-            this.unregisterReceiver(heartRateBroadcastReceiver);
         }
     }
 

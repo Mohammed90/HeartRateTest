@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.alejandro_castilla.heartratetest.WearableListItemLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:gravity="center_vertical"
+    android:layout_width="match_parent"
+    android:layout_height="100dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    <ImageView
+        android:id="@+id/deviceImg"
+        android:layout_height="20dp"
+        android:layout_width="20dp"
+        android:layout_marginBottom="4dp"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="20dp"
+        android:src="@drawable/ic_device" />
+    <TextView
+        android:id="@+id/deviceNameText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-condensed-light"
+        android:textColor="@color/white"
+        android:text="Testing"
+        android:textSize="12dp"
+        android:layout_toEndOf="@id/deviceImg"
+        android:layout_alignTop="@id/deviceImg"
+        android:layout_marginLeft="3dp"/>
+    <TextView
+        android:id="@+id/deviceAddressText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-condensed-light"
+        android:textColor="@color/white"
+        android:text="Testing"
+        android:textSize="10dp"
+        android:layout_below="@+id/deviceNameText"
+        android:layout_alignStart="@+id/deviceNameText" />
+    </RelativeLayout>
+</com.alejandro_castilla.heartratetest.WearableListItemLayout>

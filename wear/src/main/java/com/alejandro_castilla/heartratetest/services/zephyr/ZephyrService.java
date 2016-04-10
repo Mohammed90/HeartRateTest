@@ -11,6 +11,9 @@ import android.os.Message;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.alejandro_castilla.heartratetest.MainActivity;
+import com.alejandro_castilla.heartratetest.MainActivity.IntentType;
+
 import zephyr.android.BioHarnessBT.BTClient;
 import zephyr.android.BioHarnessBT.ZephyrProtocol;
 
@@ -86,11 +89,12 @@ public class ZephyrService extends Service {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case HEART_RATE:
-                    String HeartRatetext = msg.getData().getString("HeartRate");
-                    System.out.println("Heart Rate Info is " + HeartRatetext);
-                    Intent heartRateIntent = new Intent();
-                    sendBroadcast(new Intent("heartrate")
-                            .putExtra("heartratestring", HeartRatetext));
+                    String heartRatetext = msg.getData().getString("HeartRate");
+                    System.out.println("Heart Rate Info is " + heartRatetext);
+                    Intent heartRateIntent = new Intent(MainActivity.INTENT_STRING)
+                            .putExtra("heartratestring", heartRatetext)
+                            .putExtra("intenttype", IntentType.HEART_RATE_DATA);
+                    sendBroadcast(heartRateIntent);
                     Log.d(TAG, "Broadcast with Heart Rate sent.");
                     break;
             }

@@ -1,17 +1,17 @@
 package com.alejandro_castilla.heartratetest;
 
 import android.app.Activity;
-import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.wearable.view.WatchViewStub;
 import android.support.wearable.view.WearableListView;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.alejandro_castilla.heartratetest.MainActivity.IntentType;
 
 public class DevicesListActivity extends Activity implements WearableListView.ClickListener {
 
@@ -20,7 +20,7 @@ public class DevicesListActivity extends Activity implements WearableListView.Cl
     private TextView listTitleText;
     private Context context = this;
     private BroadcastReceiver broadcastReceiver;
-//    private String[] elements = { "Redmi", "BH" };
+    private String[] devicesName = { "SensorTag", "BH" };
 
 @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,32 +36,41 @@ public class DevicesListActivity extends Activity implements WearableListView.Cl
                 if (listView == null) {
                     Log.d("DevicesListActivity", "ListView is null");
                 } else {
-                    listenForDevices();
+                    listView.setAdapter(new WearableListViewAdapter(context, devicesName));
+                    listView.setClickListener((WearableListView.ClickListener) context);
+//                    listenForDevices();
                 }
             }
         });
     }
 
-    public void listenForDevices() {
-        broadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                BluetoothDevice deviceReceived = intent.getParcelableExtra("device");
-                listView.setAdapter(new WearableListViewAdapter(context, deviceReceived));
-                listView.setClickListener((WearableListView.ClickListener) context);
-                listTitleText.setText("Devices found");
-                Log.d(TAG, "listView adapter set.");
-            }
-        };
-
-        IntentFilter filter = new IntentFilter("devicetolist");
-        context.registerReceiver(broadcastReceiver, filter);
-
-    }
+//    public void listenForDevices() {
+//        broadcastReceiver = new BroadcastReceiver() {
+//            @Override
+//            public void onReceive(Context context, Intent intent) {
+//                BluetoothDevice deviceReceived = intent.getParcelableExtra("device");
+//                listView.setAdapter(new WearableListViewAdapter(context, deviceReceived));
+//                listView.setClickListener((WearableListView.ClickListener) context);
+//                listTitleText.setText("Devices found");
+//                Log.d(TAG, "listView adapter set.");
+//            }
+//        };
+//
+//        IntentFilter filter = new IntentFilter("devicetolist");
+//        context.registerReceiver(broadcastReceiver, filter);
+//
+//    }
 
     @Override
     public void onClick(WearableListView.ViewHolder viewHolder) {
-        Toast.makeText(this, "Clic realizado", Toast.LENGTH_LONG);
+        Toast.makeText(context, "Clic on device listened.", Toast.LENGTH_LONG);
+        Log.d(TAG, "Clic on device.");
+        int position = viewHolder.getAdapterPosition();
+        sendBroadcast(new Intent(MainActivity.INTENT_STRING)
+                .putExtra("intenttype", IntentType.TARGET_DEVICE)
+                .putExtra("deviceselected", devicesName[position]));
+        Log.d(TAG, "listView adapter set.");
+        finish();
     }
 
     @Override
@@ -72,6 +81,6 @@ public class DevicesListActivity extends Activity implements WearableListView.Cl
     @Override
     protected void onStop() {
         super.onStop();
-        context.unregisterReceiver(broadcastReceiver);
+//        context.unregisterReceiver(broadcastReceiver);
     }
 }

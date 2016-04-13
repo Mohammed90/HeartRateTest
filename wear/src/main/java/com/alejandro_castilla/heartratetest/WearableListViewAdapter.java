@@ -1,6 +1,5 @@
 package com.alejandro_castilla.heartratetest;
 
-import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.support.wearable.view.WearableListView;
 import android.util.Log;
@@ -13,26 +12,26 @@ public class WearableListViewAdapter extends WearableListView.Adapter {
 
     private final String TAG = "WearableListViewAdapter";
 
-    private String deviceName;
-    private String deviceAddress;
+    private String[] deviceName;
+    private String deviceAddress = "Not being used.";
     private final Context context;
     private final LayoutInflater inflater;
 
-    public WearableListViewAdapter(Context context, BluetoothDevice device) {
-        Log.d(TAG, "WearableListViewAdapter constructor accessed.");
-        this.deviceName = device.getName();
-        this.deviceAddress = device.getAddress();
+    public WearableListViewAdapter(Context context, String[] devices) {
+//        Log.d(TAG, "WearableListViewAdapter constructor accessed.");
+        this.deviceName = devices;
+//        this.deviceAddress = device;
         this.context = context;
         this.inflater = LayoutInflater.from(context);
     }
 
     @Override
     public void onBindViewHolder(WearableListView.ViewHolder holder, int position) {
-        Log.d(TAG, "onBindViewHolder");
+//        Log.d(TAG, "onBindViewHolder");
         ItemViewHolder itemViewHolder = (ItemViewHolder) holder;
         TextView deviceNameText = itemViewHolder.deviceNameText;
         TextView deviceAddressText = itemViewHolder.deviceAddressText;
-        deviceNameText.setText(deviceName);
+        deviceNameText.setText(deviceName[position]);
         deviceAddressText.setText(deviceAddress);
 
         holder.itemView.setTag(position);
@@ -41,12 +40,12 @@ public class WearableListViewAdapter extends WearableListView.Adapter {
 
     @Override
     public int getItemCount() {
-        return 1;
+        return deviceName.length;
     }
 
     @Override
     public WearableListView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        Log.d(TAG, "onCreateViewHolder");
+//        Log.d(TAG, "onCreateViewHolder");
         return new ItemViewHolder(inflater.inflate(R.layout.list_item, null));
     }
 
@@ -56,7 +55,7 @@ public class WearableListViewAdapter extends WearableListView.Adapter {
 
         public ItemViewHolder (View itemView) {
             super(itemView);
-            Log.d("ItemViewHolder", "ItemViewHolder constructor");
+//            Log.d("ItemViewHolder", "ItemViewHolder constructor");
             deviceNameText = (TextView) itemView.findViewById(R.id.deviceNameText);
             deviceAddressText = (TextView) itemView.findViewById(R.id.deviceAddressText);
         }

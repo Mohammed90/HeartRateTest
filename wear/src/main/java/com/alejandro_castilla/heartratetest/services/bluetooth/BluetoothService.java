@@ -27,7 +27,7 @@ import java.util.ArrayList;
 
 public class BluetoothService extends Service {
 
-    public enum BluetoothStatus { IDLE, DISCOVERING, NOT_SUPPORTED }
+    public enum BluetoothStatus { IDLE, NOT_SUPPORTED }
 
     private static final String TAG = "BluetoothService";
     public static BluetoothStatus bluetoothStatus;
@@ -72,7 +72,6 @@ public class BluetoothService extends Service {
     public void startDiscoveryOfDevices() {
         devices = new ArrayList<>();
         bluetoothAdapter.startDiscovery();
-        bluetoothStatus = BluetoothStatus.DISCOVERING;
 
         //BroadcastReceiver to receive data
         broadcastReceiver = new BroadcastReceiver() {
@@ -97,7 +96,7 @@ public class BluetoothService extends Service {
     }
 
     public void stopDiscoveryOfDevices() {
-        if (bluetoothStatus == bluetoothStatus.DISCOVERING ) {
+        if (bluetoothAdapter.isDiscovering()) {
             this.unregisterReceiver(broadcastReceiver);
             bluetoothStatus = BluetoothStatus.IDLE;
             bluetoothAdapter.cancelDiscovery();
@@ -161,6 +160,7 @@ public class BluetoothService extends Service {
                         .putExtra("intenttype", IntentType.DEVICE_NOT_FOUND));
             } else {
                 //Send the device to MainActivity
+                Log.d(TAG, "Sending targetDevice to MainActivity");
                 sendBroadcast(new Intent(MainActivity.INTENT_STRING)
                         .putExtra("device", bluetoothDevice).putExtra("intenttype",
                                 IntentType.DEVICE_FOUND));

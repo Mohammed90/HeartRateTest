@@ -12,9 +12,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="25dp"
         android:textSize="17dp"
-        android:text="Finding devices..."
+        android:text="Select a device"
         android:id="@+id/listTitle"/>
 
     <android.support.wearable.view.WearableListView

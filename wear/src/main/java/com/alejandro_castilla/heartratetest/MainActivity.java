@@ -23,8 +23,6 @@ import com.alejandro_castilla.heartratetest.services.bluetooth.BluetoothService;
 import com.alejandro_castilla.heartratetest.services.bluetooth.BluetoothService.BluetoothStatus;
 import com.alejandro_castilla.heartratetest.services.zephyr.ZephyrService;
 
-import java.util.ArrayList;
-
 public class MainActivity extends WearableActivity {
 
     private static final String TAG = "MainActivity";
@@ -32,19 +30,19 @@ public class MainActivity extends WearableActivity {
 
     /* Enum for intents */
     public enum IntentType {
-        DEVICE_FOUND, DEVICE_NOT_FOUND, HEART_RATE_DATA
+        TARGET_DEVICE, DEVICE_FOUND, DEVICE_NOT_FOUND, HEART_RATE_DATA
     }
 
-
+    /* Layout items */
     private TextView textView;
     private ImageButton btnStart;
     private ImageButton btnPause;
 
     /* Some fields used for Bluetooth. */
     private final int REQUEST_ENABLE_BT = 1;
+    private String deviceSelected;
     private BluetoothAdapter bluetoothAdapter = null;
     private BluetoothService bluetoothService;
-    private ArrayList<BluetoothDevice> devices;
     private BluetoothDevice targetDevice;
     private boolean connectedToDevice = false;
 
@@ -52,6 +50,7 @@ public class MainActivity extends WearableActivity {
     private ZephyrService zephyrService = null;
     private boolean zephyrServiceBinded = false;
 
+    /* BroadcastReceiver fields to handle intents from services and other activities */
     private BroadcastReceiver broadcastReceiver = null;
     private boolean broadcastReceiverRegistered = false;
     private final IntentFilter filter = new IntentFilter(INTENT_STRING);
@@ -85,7 +84,6 @@ public class MainActivity extends WearableActivity {
             connectedToDevice=zephyrService.connectToZephyr(bluetoothAdapter, targetDevice);
             if (connectedToDevice) {
                 textView.setText("Connected to Zephyr");
-//                receiveHeartRateData();
             }
             zephyrServiceBinded = true;
 
@@ -115,10 +113,11 @@ public class MainActivity extends WearableActivity {
                     public void onClick(View v) {
                         btnStart.setVisibility(ImageButton.GONE);
                         btnPause.setVisibility(ImageButton.VISIBLE);
-                        textView.setText("Discovering...");
-                        bluetoothService.startDiscoveryOfDevices();
-                        bluetoothService.findBluetoothDevice("BH");
-                        startBroadcastReceiver();
+                        Intent intent = new Intent (MainActivity.this, DevicesListActivity.class);
+                        startActivity(intent);
+//                        textView.setText("Discovering...");
+//                        bluetoothService.startDiscoveryOfDevices();
+//                        bluetoothService.findBluetoothDevice("BH");
 //                        Intent intent = new Intent (MainActivity.this, DevicesListActivity.class);
 //                        startActivity(intent);
 
@@ -170,12 +169,25 @@ public class MainActivity extends WearableActivity {
                 Log.d("TAG", "Intent received");
                 IntentType intentType = (IntentType) intent.getSerializableExtra("intenttype");
                 switch (intentType) {
+                    case TARGET_DEVICE:
+                        Log.d(TAG, "Target device string received.");
+                        deviceSelected = intent.getStringExtra("deviceselected");
+                        bluetoothService.startDiscoveryOfDevices();
+                        bluetoothService.findBluetoothDevice(deviceSelected);
+                        textView.setText("Looking for device...");
+                        break;
                     case DEVICE_FOUND:
                         targetDevice = intent.getParcelableExtra("device");
                         Log.d(TAG, "Device received on MainActivity: " + targetDevice.getName());
                         textView.setText("Device found!");
-                        sendBroadcast(new Intent("devicetolist").putExtra("device", targetDevice));
-                        startZephyrService();
+
+                        switch (deviceSelected) {
+                            case "BH":
+                                startZephyrService();
+                                break;
+                            // TODO more devices
+                        }
+
                         break;
                     case HEART_RATE_DATA:
                         Log.d(TAG, "Heart Rate broadcast received.");
@@ -190,8 +202,6 @@ public class MainActivity extends WearableActivity {
                         Toast.makeText(MainActivity.this, "Device not found. Try again...",
                                 Toast.LENGTH_LONG).show();
                         textView.setText("Idle");
-                        MainActivity.this.unregisterReceiver(broadcastReceiver);
-                        broadcastReceiverRegistered = false;
                         break;
                     default:
                         Log.d(TAG, "Error on intent");
@@ -208,37 +218,20 @@ public class MainActivity extends WearableActivity {
         Intent zephyrServiceIntent = new Intent(this, ZephyrService.class);
         bindService(zephyrServiceIntent, zephyrServiceConnection,
                 Context.BIND_AUTO_CREATE);
+        zephyrServiceBinded = true;
     }
 
     public void stopZephyrService() {
         zephyrService.closeConnection();
-        this.unregisterReceiver(broadcastReceiver);
-        broadcastReceiverRegistered = false;
-//        heartRateBroadcastReceiverRegistered = false;
         unbindService(zephyrServiceConnection);
         zephyrServiceBinded = false;
 
     }
 
-//    private void receiveHeartRateData() {
-//        heartRateBroadcastReceiver = new BroadcastReceiver() {
-//            @Override
-//            public void onReceive(Context context, Intent intent) {
-//                Log.d(TAG, "Heart Rate broadcast received.");
-//                String heartrate = intent.getStringExtra("heartratestring");
-//                textView.setText(heartrate);
-//            }
-//        };
-//
-//        IntentFilter heartRatefilter = new IntentFilter("heartrate");
-//        this.registerReceiver(heartRateBroadcastReceiver, heartRatefilter);
-//        heartRateBroadcastReceiverRegistered = true;
-//        Log.d(TAG, "Broadcast Receiver for heart rate has been registered.");
-//    }
-
     @Override
     protected void onStart() {
         super.onStart();
+        startBroadcastReceiver();
         enableBluetooth();
         // Finish the application if Bluetooth is not supported.
         if (BluetoothService.bluetoothStatus == BluetoothStatus.NOT_SUPPORTED) {
@@ -283,4 +276,5 @@ public class MainActivity extends WearableActivity {
                 }
         }
     }
+
 }

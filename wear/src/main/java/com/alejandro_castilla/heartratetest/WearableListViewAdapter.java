@@ -27,7 +27,6 @@ public class WearableListViewAdapter extends WearableListView.Adapter {
 
     @Override
     public void onBindViewHolder(WearableListView.ViewHolder holder, int position) {
-//        Log.d(TAG, "onBindViewHolder");
         ItemViewHolder itemViewHolder = (ItemViewHolder) holder;
         TextView deviceNameText = itemViewHolder.deviceNameText;
         TextView deviceAddressText = itemViewHolder.deviceAddressText;
@@ -45,7 +44,6 @@ public class WearableListViewAdapter extends WearableListView.Adapter {
 
     @Override
     public WearableListView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-//        Log.d(TAG, "onCreateViewHolder");
         return new ItemViewHolder(inflater.inflate(R.layout.list_item, null));
     }
 
@@ -55,7 +53,6 @@ public class WearableListViewAdapter extends WearableListView.Adapter {
 
         public ItemViewHolder (View itemView) {
             super(itemView);
-//            Log.d("ItemViewHolder", "ItemViewHolder constructor");
             deviceNameText = (TextView) itemView.findViewById(R.id.deviceNameText);
             deviceAddressText = (TextView) itemView.findViewById(R.id.deviceAddressText);
         }

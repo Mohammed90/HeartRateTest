@@ -1,17 +1,16 @@
 package com.alejandro_castilla.heartratetest;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 import android.support.wearable.view.WatchViewStub;
 import android.support.wearable.view.WearableListView;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.alejandro_castilla.heartratetest.MainActivity.IntentType;
 
 public class DevicesListActivity extends Activity implements WearableListView.ClickListener {
 
@@ -19,7 +18,7 @@ public class DevicesListActivity extends Activity implements WearableListView.Cl
     private WearableListView listView;
     private TextView listTitleText;
     private Context context = this;
-    private BroadcastReceiver broadcastReceiver;
+    private Messenger mainActivityMessenger;
     private String[] devicesName = { "SensorTag", "BH" };
 
 @Override
@@ -38,7 +37,8 @@ public class DevicesListActivity extends Activity implements WearableListView.Cl
                 } else {
                     listView.setAdapter(new WearableListViewAdapter(context, devicesName));
                     listView.setClickListener((WearableListView.ClickListener) context);
-//                    listenForDevices();
+                    mainActivityMessenger = getIntent()
+                            .getParcelableExtra("mainactivitymessenger");
                 }
             }
         });
@@ -66,10 +66,15 @@ public class DevicesListActivity extends Activity implements WearableListView.Cl
         Toast.makeText(context, "Clic on device listened.", Toast.LENGTH_LONG);
         Log.d(TAG, "Clic on device.");
         int position = viewHolder.getAdapterPosition();
-        sendBroadcast(new Intent(MainActivity.INTENT_STRING)
-                .putExtra("intenttype", IntentType.TARGET_DEVICE)
-                .putExtra("deviceselected", devicesName[position]));
-        Log.d(TAG, "listView adapter set.");
+        Message msg = Message.obtain(null, MainActivity.TARGET_DEVICE);
+        Bundle bundle = new Bundle();
+        bundle.putString("deviceselected", devicesName[position]);
+        msg.setData(bundle);
+        try {
+            mainActivityMessenger.send(msg);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
         finish();
     }
 

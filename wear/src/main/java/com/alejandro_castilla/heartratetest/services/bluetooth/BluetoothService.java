@@ -10,12 +10,14 @@ import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.widget.Toast;
 
 import com.alejandro_castilla.heartratetest.MainActivity;
-import com.alejandro_castilla.heartratetest.MainActivity.IntentType;
 
 import java.util.ArrayList;
 
@@ -28,7 +30,6 @@ import java.util.ArrayList;
 public class BluetoothService extends Service {
 
     public enum BluetoothStatus { IDLE, NOT_SUPPORTED }
-
     private static final String TAG = "BluetoothService";
     public static BluetoothStatus bluetoothStatus;
 
@@ -40,6 +41,9 @@ public class BluetoothService extends Service {
     private boolean deviceFound;
 
     private Context toastContext = null;
+
+    /* Messengers fields */
+    private Messenger mainActivityMessenger = null;
 
     @Override
     public void onCreate() {
@@ -57,11 +61,11 @@ public class BluetoothService extends Service {
     }
 
 
-    // We don't want this service to be binded for the moment, so we return null.
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         Log.d(TAG, "BluetoothService has been started.");
+        mainActivityMessenger = intent.getParcelableExtra("mainactivitymessenger");
         return bluetoothServiceBinder;
     }
 
@@ -110,10 +114,6 @@ public class BluetoothService extends Service {
         new FindBluetoothDeviceTask().execute(deviceName);
     }
 
-    public BluetoothDevice getTargetDevice() {
-        return targetDevice;
-    }
-
     public void setToastContext(Context toastContext) {
         this.toastContext = toastContext;
     }
@@ -154,16 +154,25 @@ public class BluetoothService extends Service {
         @Override
         protected void onPostExecute(BluetoothDevice bluetoothDevice) {
             super.onPostExecute(bluetoothDevice);
+            Message msg;
             if (targetDevice == null) {
                 Log.d(TAG, "targetDevice null");
-                sendBroadcast(new Intent(MainActivity.INTENT_STRING)
-                        .putExtra("intenttype", IntentType.DEVICE_NOT_FOUND));
+                msg = Message.obtain(null, MainActivity.DEVICE_NOT_FOUND);
+                try {
+                    mainActivityMessenger.send(msg);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             } else {
                 //Send the device to MainActivity
                 Log.d(TAG, "Sending targetDevice to MainActivity");
-                sendBroadcast(new Intent(MainActivity.INTENT_STRING)
-                        .putExtra("device", bluetoothDevice).putExtra("intenttype",
-                                IntentType.DEVICE_FOUND));
+                msg = Message.obtain(null, MainActivity.DEVICE_FOUND);
+                msg.obj = targetDevice;
+                try {
+                    mainActivityMessenger.send(msg);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
 
 

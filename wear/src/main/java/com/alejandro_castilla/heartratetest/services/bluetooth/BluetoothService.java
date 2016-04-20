@@ -30,7 +30,7 @@ import java.util.ArrayList;
 public class BluetoothService extends Service {
 
     public enum BluetoothStatus { IDLE, NOT_SUPPORTED }
-    private static final String TAG = "BluetoothService";
+    private static final String TAG = BluetoothService.class.getSimpleName();
     public static BluetoothStatus bluetoothStatus;
 
     private final IBinder bluetoothServiceBinder = new BluetoothServiceBinder();

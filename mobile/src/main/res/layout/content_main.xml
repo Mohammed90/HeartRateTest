@@ -13,10 +13,11 @@
     tools:showIn="@layout/activity_main">
 
     <TextView
+        android:id="@+id/heartratetext"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="This app only works on Android Wear for the moment."
+        android:text="Waiting for heart rate data..."
         android:layout_centerHorizontal="true"
-        android:textSize="20dp"
+        android:textSize="30dp"
         android:textAlignment="center"/>
 </RelativeLayout>

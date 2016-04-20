@@ -20,13 +20,14 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alejandro_castilla.heartratetest.services.SyncDataService;
 import com.alejandro_castilla.heartratetest.services.bluetooth.BluetoothService;
 import com.alejandro_castilla.heartratetest.services.bluetooth.BluetoothService.BluetoothStatus;
 import com.alejandro_castilla.heartratetest.services.zephyr.ZephyrService;
 
 public class MainActivity extends WearableActivity {
 
-    private static final String TAG = "MainActivity";
+    private static final String TAG = MainActivity.class.getSimpleName();
 
     /* IDs for messages */
 
@@ -49,8 +50,11 @@ public class MainActivity extends WearableActivity {
     private boolean connectedToDevice = false;
 
     /* Some fields used for Zephyr Service */
-    private ZephyrService zephyrService = null;
+    private ZephyrService zephyrService;
     private boolean zephyrServiceBinded = false;
+
+    /* Some fields used for Sync Data Service */
+    private SyncDataService syncDataService;
 
     /* Messenger fields for receiving messages through IncomingHandler class */
 
@@ -85,8 +89,9 @@ public class MainActivity extends WearableActivity {
                     break;
                 case HEART_RATE_DATA:
                     Log.d(TAG, "Heart Rate broadcast received.");
-                    String heartRate = msg.getData().getString("heartratestring");
-                    textView.setText(heartRate);
+                    String heartRateString = msg.getData().getString("heartratestring");
+                    textView.setText(heartRateString);
+                    syncDataService.syncHeartRateData(heartRateString);
                     break;
                 case DEVICE_NOT_FOUND:
                     Log.d(TAG, "Received a null device");
@@ -142,6 +147,24 @@ public class MainActivity extends WearableActivity {
         @Override
         public void onServiceDisconnected(ComponentName name) {
             Log.d(TAG, "Zephyr Service disconnected.");
+        }
+    };
+
+    /* ServiceConnection declaration to connect to SyncDataService */
+
+    private ServiceConnection syncDataServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "Connected to SyncDataService");
+            SyncDataService.SyncDataServiceBinder syncDataServiceBinder =
+                    (SyncDataService.SyncDataServiceBinder) service;
+            syncDataService = syncDataServiceBinder.getService();
+
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
         }
     };
 
@@ -238,6 +261,12 @@ public class MainActivity extends WearableActivity {
             bluetoothServiceIntent.putExtra("mainactivitymessenger", mainActivityMessenger);
             bindService(bluetoothServiceIntent, bluetoothServiceConnection,
                     Context.BIND_AUTO_CREATE);
+            // Start SyncDataService
+            Log.d(TAG, "Starting Sync Data Service");
+            Intent syncDataServiceIntent = new Intent (MainActivity.this, SyncDataService.class);
+            syncDataServiceIntent.putExtra("mainactivitymessenger", mainActivityMessenger);
+            bindService(syncDataServiceIntent, syncDataServiceConnection,
+                    Context.BIND_AUTO_CREATE);
         }
     }
 
@@ -246,9 +275,17 @@ public class MainActivity extends WearableActivity {
         super.onStop();
         bluetoothService.stopDiscoveryOfDevices();
         unbindService(bluetoothServiceConnection);
+        unbindService(syncDataServiceConnection);
         if (zephyrServiceBinded) {
             unbindService(zephyrServiceConnection);
         }
+        finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestroy called");
+        super.onDestroy();
     }
 
     @Override
